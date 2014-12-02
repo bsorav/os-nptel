@@ -1,0 +1,36 @@
+<body>
+<ol>
+<li> Why are mkdir, ln and rm implemented as separate user-level programs, while cd is implemented as a built-in command?</li>
+
+<li> On a linux machine, type the following command
+<pre>
+$ cat | tee output.file
+</pre>
+cat is a UNIX utility that prints the contents of STDIN to STDOUT. tee is a UNIX utility that prints the contents of STDIN to both STDOUT and to the file named by its argument (output.file). After you type this command, you can type in some characters followed by the newline character.
+
+<ol>
+<li> While this command is running, examine the processes created:
+<ol>
+
+Use pstree to see the process hierarchy. Tell us what you find about the process hierarchy.
+Use 'ps x' to identify the process IDs of the processes created by cat and tee commands. Linux provides a proc pseudo-filesystem which can be used to examine the state of a process using filesystem namespace.
+
+Type the following command for both process-ids:
+<pre>
+$ ls -l /proc/pid-num/fd/
+</pre>											            
+
+<ol>
+<li>What do you find? What are 0,1,2,...? What do they symlink to?
+</ol>
+
+<pre>
+$ ls -l /proc/self/fd/
+</pre>
+
+<ol>
+<li>What do you find? What is 3 pointing to? Why?
+</ol>
+</ol>
+
+</body>
