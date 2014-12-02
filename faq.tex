@@ -299,6 +299,7 @@ What would be the smallest possible (but correct) implementation of {\tt \_f}?
 \end{enumerate}
 
 \section{Segmentation and Trap Handling}
+\label{sec:segmentation}
 \begin{enumerate}
 \item
 Consider the following program header of an ELF executable file {\tt a.out}:
@@ -319,7 +320,8 @@ the virtual address space of the process just after successful completion of
 the exec() system call. Indicate the sizes, and the contents of the memory regions, wherever possible.
 \item[b.] Draw the layout of the physical memory of the computer just after this
 executable is loaded. Assume, segmentation is used for implementing virtual memory address
-spaces. Show the contents of the segment registers (CS, DS, SS, etc.), the global-descriptor table, and
+spaces. Show the contents of the segment registers (CS, DS, SS, etc.),
+the global-descriptor table (GDT), and
 GDTR.
 \end{enumerate}
 
@@ -335,9 +337,76 @@ application's address space in the following situations:
 \item The application tries to overwrite GDT entries
 \item The application tries to lower its privilege-level (i.e., tries to gain supervisor privileges).
 \end{enumerate}
+
+\item What are the different ways in which an unpriviliged application can cause the CPU
+to start running in privileged mode?
+\item On a trap, the hardware changes the contents of the ESP register if the trap causes
+an escalation in privilege. Why does it need to do so? Where is the new value of ESP obtained
+from?
+\item In a certain OS, when executing in kernel mode, a trap on vector
+$0x80$ causes three words to get
+pushed on stack by hardware, namely
+CS, EIP and EFLAGS. On the other hand, when executing in user mode, a trap on vector
+$0x80$ causes five
+words to get pushed on stack by hardware, namely CS, EIP, EFLAGS, SS, and ESP.
+What does it say about
+the contents of the Interrupt Descriptor Table (IDT) at $0x80$ entry? Why does the hardware
+push a different number of words in the two cases?
+\item Should an operating system allow an unprivileged (untrusted) application to modify
+the task-state segment (which is used to obtain the value of ESP on a trap)? Why or why not?
+\item A process-model kernel maintains a separate kernel-side stack (the stack to which
+control transfers on a privileged trap) for each process. On the other hand, an interrupt-model
+kernel maintains a single stack for the kernel. What are the advantages and disadvantages of
+each design?
+\item Consider the first question in Section~\ref{sec:segmentation}. Draw the layout of the
+physical memory of the computer just after a trap occurs during the execution of this
+executable. Show the contents of the segment registers (CS, DS, SS, etc.), the global-descriptor
+table (GDT) and GDTR.
+\item On a trap, certain parts of the processor state (CS, EIP, EFLAGS) are saved by the hardware.
+The other parts of the processor state (e.g., other segment registers, other general-purpose
+registers like EAX, etc.) are saved by software (i.e., the first few instructions executed
+after a trap). (Note that the first few instructions executed on a trap are a part of the
+trap handler). Why this distinction? Why can't all registers be saved by the software? Conversely,
+why does the hardware not save all elements of the state on a trap?
+\item The trap-handling mechanism is used to implement system calls. Explain the sequence
+of steps that a kernel must follow to ensure that a user can invoke any system call at will,
+but cannot otherwise subvert the security of the computer.
+\item Explain the sequence of steps executed by the hardware on the execution of the {\tt iret}
+instruction.
+\item {\em Advanced Question}:
+Traps can be caused due to exceptions (triggered by an application through a software
+instruction or a violation, e.g., segmentation fault) or by external interrupts (e.g.,
+caused by a device like network card, disk, etc.). In both cases, the trap handling mechanism
+remains same. What are the advantages of using the same mechanism of trap handling for
+both internal exceptions and external interrupts?
+\item {\em Advanced Question}: On debuggers like GDB, a programmer is allowed to set a
+``breakpoint'', which means that if the execution of the program ever reaches the breakpoint
+address, then the execution is interrupted. One way to implement breakpoints is to
+replace the instruction at the address of the breakpoint with a software interrupt
+instruction. Whenever the execution reaches the breakpoint, a trap gets generated
+and the kernel can transfer control to the debugger. How does the debugger know the
+contents of the program at the time of reaching the breakpoint? Explain the sequence of
+steps required to save the program state, so the programmer can examine it.
 \end{enumerate}
-\section{Paging}
+
 \section{Kernel Structures for Implementing Processes}
+\begin{enumerate}
+\item Each process has a unique {\tt pid}. Assume that the {\tt pid} is a 32-bit integer.
+Does that mean that there can be only $2^{32}$ number of processes across the lifetime
+of execution of the computer? When can the {\tt pid}'s be recycled (i.e., reused for new
+processes).
+\item At any time, let $m$ be the number of PCBs whose state is RUNNING and $n$ be the
+number of CPUs in the computer. What is the relation between $m$ and $n$?
+\item An OS configures preemption by configuring the timer interrupt device to generate
+an interrupt periodically (e.g., every 10ms). On each interrupt, the trap is generated
+and the {\em handler} executes (by transferring control through IDT). What should the
+handler do to implement preemptive scheduling (i.e., a process can be interrupted
+at any time)?
+\item Interrupt vs. Process model
+\end{enumerate}
+
+\section{Paging}
+
 \section{Process Switching, Fork, Scheduler}
 \section{Creating the First Process}
 \section{Handling User Pointers}
