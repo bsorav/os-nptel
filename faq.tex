@@ -7,6 +7,11 @@
 \begin{document}
 \section{UNIX System Calls}
 \begin{enumerate}
+\item Consider the C function ‘printf()’ on UNIX. Is printf() implemented by the OS,
+or by an
+application-level library? What system call does
+printf() make internally? 
+
 \item Why are {\tt mkdir}, {\tt ln} and {\tt rm} implemented as separate user-level programs, while {\tt cd} is implemented as a built-in command?
 
 \item On a linux machine, type the following command
@@ -86,8 +91,96 @@ You are not allowed to use any other system calls (e.g., {\tt open}, {\tt read},
 other functions. Using these functions, implement a utility that given two filenames, outputs
 the common strings in the two files on the standard output.
 
+\item What is the total number of processes at the end of the execution of the following program? Assume there is one process in the beginning that starts running at main. Also, assume that all system calls succeed.
+\begin{verbatim}
+main() {
+  fork();
+  fork();
+  fork();
+}
+\end{verbatim}
+Explain. 
+
+\item
+Consider the following program:
+\begin{verbatim}
+main() {
+    int fd;
+    fd = open(“outfile”, O_RDWR)
+    fork();
+    write(fd, “hello”, 5);
+    exit();
+}
+\end{verbatim}
+Assume all system calls finish successfully on a uniprocessor system. Also, assume that a system call cannot be interrupted in the middle of its execution. What will be the contents of the “outfile” file, after all processes have successfully exited? Explain briefly.
+
+\item
+Consider the following program:
+\begin{verbatim}
+main() {
+    int fd;
+    fd = open(“outfile”, O_RDWR)
+    fork();
+    write(fd, “hello”, 5);
+    exit();
+}
+\end{verbatim}
+Assume all system calls finish successfully on a uniprocessor system. Also, assume that a system call cannot be interrupted in the middle of its execution. What will be the contents of the “outfile” file, after all processes have successfully exited? Explain briefly.
+
 \item Give two interesting applications where you think the user-defined SIGUSR1 and
 SIGUSR2 can be useful?
+
+\item
+In UNIX, a child process may terminate before a parent calls wait(). When the parent calls wait() eventually, it still expects to read the correct exitcode that the child returned. To support this functionality, UNIX does not completely remove the process till it's parent has called wait() on it.
+\\\\
+Such processes that have completed execution but still have an entry in the process table are called zombie processes. Usually, the presence of zombie processes in the system for a long time indicates a bug in the program (it is a common error).
+\\\\
+UNIX also provides the SIGCHLD signal, which is received by the parent process whenever one of
+its children exits.
+\\\\
+In class we discussed that the shell implements ``\&" functionality by not
+calling wait() immediately. Should the shell never call wait()? When should it call wait()? Answer by providing short pseudo-code. (Hint: you may want to use the SIGCHLD signal).
+
+
+\item
+UNIX uses {\tt fork()} and {\tt exec()} system calls to create new processes. On the other hand, Microsoft
+Windows has a system call called {\tt CreateProcess()}.
+Here is a sample definition of the
+{\tt CreateProcess()} call
+(this is not identical but similar to Windows’ system call):
+\begin{verbatim}
+Boolean CreateProcess(
+    lpApplicationName,    /* Name of the executable. */
+    lpCommandLine,        /* Command line parameters. */
+    bInheritHandles,      /* Boolean variable indicating if the new process
+                             should inherit the open file descriptors of the
+                             calling process. */
+    lpProcessAttributes,  /* attributes of security attributes of process. */
+    lpCurrentDirectory,   /* current working directory of new process. */
+    lpProcessInformation  /* A pointer to Process Information structure that
+                             receives identification information about the
+                             new process. */
+. . . /* ignoring some other arguments. */
+);
+\end{verbatim}
+Write code to implement the equivalent of this call on UNIX. You should show how you use
+{\tt lpApplicationName}, {\tt lpCommandLine}, {\tt bInheritHandles},
+{\tt lpProcessAttributes}, {\tt lpCurrentDirectory}, and {\tt lpProcessInformation}
+on
+UNIX.
+
+
+\end{enumerate}
+
+\section{Threads}
+\begin{enumerate}
+\item What is an address space? How does the operating system ensure that a variable
+of one program/process does not clobber a variable of another process?
+\item Each process has a separate address space. When is the new address space created?
+\item What are threads? How are they different from processes? What are the advantages?
+Give examples to motivate the use of threads.
+\item What is the difference between user-level threads and kernel-level threads?
+Do user-level threads provide true physical concurrency? If not, why are they useful?
 
 \item
 Threads can be implemented completely at the user level. i.e., we do not require privileged operations to implement a thread abstraction and schedule different threads. In other words, a process can provide multiple threads by implementing a scheduler. Let's see how this can be done.
@@ -102,28 +195,7 @@ Read the manpage of the signal, alarm, and setitimer. Understand how SIGALRM can
 implementing user-level threads. Briefly describe how you will do
 this (2-3 sentences and some pseudo-code). 
 
-\item
-In UNIX, a child process may terminate before a parent calls wait(). When the parent calls wait() eventually, it still expects to read the correct exitcode that the child returned. To support this functionality, UNIX does not completely remove the process till it's parent has called wait() on it.
-\\\\
-Such processes that have completed execution but still have an entry in the process table are called zombie processes. Usually, the presence of zombie processes in the system for a long time indicates a bug in the program (it is a common error).
-\\\\
-UNIX also provides the SIGCHLD signal, which is received by the parent process whenever one of
-its children exits.
-\\\\
-In class we discussed that the shell implements ``\&" functionality by not
-calling wait() immediately. Should the shell never call wait()? When should it call wait()? Answer by providing short pseudo-code. (Hint: you may want to use the SIGCHLD signal).
 
-\end{enumerate}
-
-\section{Threads}
-\begin{enumerate}
-\item What is an address space? How does the operating system ensure that a variable
-of one program/process does not clobber a variable of another process?
-\item Each process has a separate address space. When is the new address space created?
-\item What are threads? How are they different from processes? What are the advantages?
-Give examples to motivate the use of threads.
-\item What is the difference between user-level threads and kernel-level threads?
-Do user-level threads provide true physical concurrency? If not, why are they useful?
 \end{enumerate}
 
 \section{PC Architecture and Compiler Conventions}
@@ -146,6 +218,9 @@ lines are implementing which C statement. Assume GCC calling conventions. You wi
 need to be careful about properly naming all variables and
 arguments (e.g., using global addresses, stack offsets or frame pointer offsets),
 use proper opcodes and addressing modes, obey caller and callee-save conventions, etc. 
+
+\item A new compiler ‘{\tt hcc}’ is developed. What should {\tt hcc} be careful about if it wants to use the
+libraries that were compiled using {\tt gcc}?
 
 \item To implement function calls, typically compilers use conventions about which registers
 to save. Some registers are saved by the caller (before the call instruction) and some
@@ -220,9 +295,47 @@ _g:
 \end{verbatim}
 \end{itemize}
 What would be the smallest possible (but correct) implementation of {\tt \_f}?
+
 \end{enumerate}
 
 \section{Segmentation and Trap Handling}
+\begin{enumerate}
+\item
+Consider the following program header of an ELF executable file {\tt a.out}:
+\begin{verbatim}
+LOAD: offset    0x00001000
+      vaddr 0x40100000
+      paddr 0x00100000
+      align 2**12
+      filesize 0x0000b596
+      memsize 0x000126fc
+      flags rwx
+\end{verbatim}
+Assume that this executable is loaded using the {\tt exec(“a.out”, …)} system call on 32-bit Linux.
+Also, assume that the Linux kernel is mapped starting at virtual address {\tt 0xc0000000}.
+\begin{enumerate}
+\item[a.] Draw the layout of
+the virtual address space of the process just after successful completion of
+the exec() system call. Indicate the sizes, and the contents of the memory regions, wherever possible.
+\item[b.] Draw the layout of the physical memory of the computer just after this
+executable is loaded. Assume, segmentation is used for implementing virtual memory address
+spaces. Show the contents of the segment registers (CS, DS, SS, etc.), the global-descriptor table, and
+GDTR.
+\end{enumerate}
+
+\item The hardware does not allow an (unprivileged)
+application to execute the {\tt lgdt} instruction (to load
+the GDT). Why? What could happen if an application was allowed to execute the {\tt lgdt} instruction?
+
+\item How does the OS ensure through segmentation that one application cannot access another
+application's address space in the following situations:
+\begin{enumerate}
+\item The application tries to write to the physical address of the other application.
+\item The application tries to modify the segment register
+\item The application tries to overwrite GDT entries
+\item The application tries to lower its privilege-level (i.e., tries to gain supervisor privileges).
+\end{enumerate}
+\end{enumerate}
 \section{Paging}
 \section{Kernel Structures for Implementing Processes}
 \section{Process Switching, Fork, Scheduler}
