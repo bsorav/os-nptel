@@ -1,0 +1,245 @@
+\documentstyle{article}
+\addtolength{\oddsidemargin}{-.875in}
+\addtolength{\evensidemargin}{-.875in}
+\addtolength{\textwidth}{1.75in}
+\addtolength{\topmargin}{-.875in}
+\addtolength{\textheight}{1.75in}
+\begin{document}
+\section{UNIX System Calls}
+\begin{enumerate}
+\item Why are {\tt mkdir}, {\tt ln} and {\tt rm} implemented as separate user-level programs, while {\tt cd} is implemented as a built-in command?
+
+\item On a linux machine, type the following command
+\begin{verbatim}
+$ cat | tee output.file
+\end{verbatim}
+cat is a UNIX utility that prints the contents of STDIN to STDOUT. tee is a UNIX utility that prints the contents of STDIN to both STDOUT and to the file named by its argument (output.file). After you type this command, you can type in some characters followed by the newline character.
+
+\begin{enumerate}
+\item[a.] While this command is running, examine the processes created:
+\end{enumerate}
+
+Use pstree to see the process hierarchy. Tell us what you find about the process hierarchy.
+Use 'ps x' to identify the process IDs of the processes created by cat and tee commands. Linux provides a proc pseudo-filesystem which can be used to examine the state of a process using filesystem namespace.
+
+Type the following command for both process-ids:
+\begin{verbatim}
+$ ls -l /proc/pid-num/fd/
+\end{verbatim}
+
+\begin{enumerate}
+\item[b.] What do you find? What are 0,1,2,...? What do they symlink to?
+\end{enumerate}
+
+\begin{verbatim}
+$ ls -l /proc/self/fd/
+\end{verbatim}
+
+\begin{enumerate}
+\item[c.] What do you find? What is 3 pointing to? Why?
+\item[d.] Which system calls are executed while you run {\tt cat}, {\tt tee}, and {\tt ls} as in the above commands?
+\end{enumerate}
+
+\item Assume you are given two text files containing newline-separated strings. You wish to write
+a program that takes as input two text files and outputs another text file that contains all the
+strings that are common in the two input files. For example, if the two text files are {\tt foo}
+and {\tt bar}, with the following contents:
+\begin{verbatim}
+foo:
+hello
+os
+class
+\end{verbatim}
+\begin{verbatim}
+bar:
+os
+is
+an
+interesting
+class
+\end{verbatim}
+Then, the output would be:
+\begin{verbatim}
+output:
+os
+class
+\end{verbatim}
+({\tt os} and {\tt class} are common words in the two files). Assume you are given the following
+functions:
+\begin{enumerate}
+\item[i.] A function {\tt cat()} that takes input from its first argument and displays its
+content on the standard output (file-descriptor 1). e.g.,
+\begin{verbatim}
+cat(foo);
+\end{verbatim}
+This function call will cause the contents of the file {\tt foo} to get streamed to the standard
+output of the program.
+\item[ii.] A function {\tt sort()} that takes input from its standard input (file-descriptor 0),
+sorts the input text (assuming it consists of newline-separated words), and prints the output
+to standard output (file-descriptor 1).
+\item[iii.] A function {\tt intersect()} that takes input from file descriptors 3 and 4 (non-standard
+file descriptors). It assumes that both inputs (from each file descriptor) are sorted, and computes
+the intersection of the sorted streams of words, outputting to the standard output (file descriptor 1).
+\item[iv.] The {\tt dup()}, {\tt pipe()} and {\tt fork()} system calls.
+\end{enumerate}
+You are not allowed to use any other system calls (e.g., {\tt open}, {\tt read}, etc.) or any
+other functions. Using these functions, implement a utility that given two filenames, outputs
+the common strings in the two files on the standard output.
+
+\item Give two interesting applications where you think the user-defined SIGUSR1 and
+SIGUSR2 can be useful?
+
+\item
+Threads can be implemented completely at the user level. i.e., we do not require privileged operations to implement a thread abstraction and schedule different threads. In other words, a process can provide multiple threads by implementing a scheduler. Let's see how this can be done.
+\\\\
+To implement threads, the process needs to provide the abstraction of multiple control-flow (program counter), multiple register sets and multiple stacks. This can be done if after every periodic time interval, one thread can be interrupted and saved and another thread can be loaded. Saving a thread involves saving it's program counter, registers and stack pointer. Similarly, loading a thread involves loading the new thread's program counter, registers and stack pointer. Neither the save operation, nor the load operation requires any privileged operation -- we are just loading and saving registers.
+\\\\
+So the only remaining issue is how to periodically interrupt a running thread from within a process. For an OS, this interruption is done by the hardware timer device. A process can do this using the SIGALRM signal.
+\\\\
+Such threads implemented inside a process are called user-level threads. The OS cannot distinguish between multiple user-level threads and it can only see one process that is running which includes the thread scheduler and the different threads.
+\\\\
+Read the manpage of the signal, alarm, and setitimer. Understand how SIGALRM can help in
+implementing user-level threads. Briefly describe how you will do
+this (2-3 sentences and some pseudo-code). 
+
+\item
+In UNIX, a child process may terminate before a parent calls wait(). When the parent calls wait() eventually, it still expects to read the correct exitcode that the child returned. To support this functionality, UNIX does not completely remove the process till it's parent has called wait() on it.
+\\\\
+Such processes that have completed execution but still have an entry in the process table are called zombie processes. Usually, the presence of zombie processes in the system for a long time indicates a bug in the program (it is a common error).
+\\\\
+UNIX also provides the SIGCHLD signal, which is received by the parent process whenever one of
+its children exits.
+\\\\
+In class we discussed that the shell implements ``\&" functionality by not
+calling wait() immediately. Should the shell never call wait()? When should it call wait()? Answer by providing short pseudo-code. (Hint: you may want to use the SIGCHLD signal).
+
+\end{enumerate}
+
+\section{Threads}
+\begin{enumerate}
+\item What is an address space? How does the operating system ensure that a variable
+of one program/process does not clobber a variable of another process?
+\item Each process has a separate address space. When is the new address space created?
+\item What are threads? How are they different from processes? What are the advantages?
+Give examples to motivate the use of threads.
+\item What is the difference between user-level threads and kernel-level threads?
+Do user-level threads provide true physical concurrency? If not, why are they useful?
+\end{enumerate}
+
+\section{PC Architecture and Compiler Conventions}
+\begin{enumerate}
+\item Consider the following function:
+\begin{verbatim}
+int32_t global;
+
+int32_t foo(int32_t a, int32_t *b) {
+  int32_t c;
+
+  c = global + a;
+  
+  return *(b + c);
+}
+\end{verbatim}
+Assume that the variable global is allocated at a global address 0x12345. Write
+the assembly code for this function, with proper comments on which assembly code
+lines are implementing which C statement. Assume GCC calling conventions. You will
+need to be careful about properly naming all variables and
+arguments (e.g., using global addresses, stack offsets or frame pointer offsets),
+use proper opcodes and addressing modes, obey caller and callee-save conventions, etc. 
+
+\item To implement function calls, typically compilers use conventions about which registers
+to save. Some registers are saved by the caller (before the call instruction) and some
+registers are saved by the callee (in the function body). For example, gcc follows the
+following convention on x86:
+\begin{verbatim}
+    %eax, %ecx, %edx are "caller save" registers (saved by caller)
+    %ebp, %ebx, %esi, %edi are "callee save" registers (saved by callee) 
+\end{verbatim}
+Why is a convention needed?
+Give an example of a program where using the convention of caller and callee saved registers helps in reducing the number of saves and restores of registers during function calls. What should the compiler be careful about to maximize this optimization opportunity? Hint: Are the values of all registers useful (i.e., will they be used in future). If a value in a register will be used in subsequent instructions, that register is called live. If a value in a register will not be used in future (e.g., it will get overwritten by another value), that register is called dead. Can the caller save only live registers and ignore dead registers? What about callee? How does splitting into caller-saved and callee-saved registers improve this optimization opportunity? For example, which registers should the caller try to use first for storing its temporary values? Similarly, which registers should the callee try to use first for storing its temporary values? Why?) 
+
+\item Look at the following program:
+\begin{itemize}
+\item C code
+\begin{verbatim}
+int main(void) { return f(8)+1; }
+int f(int x) { return g(x); }
+int g(int x) { return x+3; }
+\end{verbatim}
+\item Assembly code
+\begin{verbatim}
+_main:
+  __prologue__
+  pushl %ebp
+  movl %esp, %ebp
+  __body__
+  pushl $8
+  call _f
+  addl $1, %eax
+  __epilogue__
+  movl %ebp, %esp
+  popl %ebp
+  ret
+
+_f:
+  __prologue__
+  pushl %ebp
+  movl %esp, %ebp
+  __body__
+  pushl 8(%esp)
+  call _g
+  __epilogue__
+  movl %ebp, %esp
+  popl %ebp
+  ret
+
+_g:
+  __prologue__
+  pushl %ebp
+  movl %esp, %ebp
+  save %ebx
+  pushl %ebx
+  __body__
+  movl 8(%ebp), %ebx
+  addl $3, %ebx
+  movl %ebx, %eax
+  restore %ebx
+  popl %ebx
+  __epilogue__
+  movl %ebp, %esp
+  popl %ebp
+  ret
+\end{verbatim}
+Notice that the function implementation only needs to obey the compiler conventions.
+Another smaller (and faster) but correct implementation of {\tt g} is the following:
+\begin{verbatim}
+_g:
+  movl 4(%esp), %eax
+  addl $3, %eax
+  ret
+\end{verbatim}
+\end{itemize}
+What would be the smallest possible (but correct) implementation of {\tt \_f}?
+\end{enumerate}
+
+\section{Segmentation and Trap Handling}
+\section{Paging}
+\section{Kernel Structures for Implementing Processes}
+\section{Process Switching, Fork, Scheduler}
+\section{Creating the First Process}
+\section{Handling User Pointers}
+\section{Concurrency}
+\section{Locking}
+\section{Condition Variables, Semaphores, Monitors, Transactions}
+\section{Synchronization in xv6}
+\section{Page Replacement}
+\section{Storage Devices, Filesystem Interfaces}
+\section{Filesystem Implementation}
+\section{Filesystem Operations}
+\section{Crash Recovery and Logging}
+\section{Protection and Security}
+\section{Scheduling Policies}
+\section{Lock-free Synchronization}
+\section{Microkernels, Exokernels, Multikernels}
+
+\end{document}
