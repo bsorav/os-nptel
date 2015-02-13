@@ -160,7 +160,7 @@ Boolean CreateProcess(
     lpProcessInformation  /* A pointer to Process Information structure that
                              receives identification information about the
                              new process. */
-. . . /* ignoring some other arguments. */
+     . . .                /* ignoring some other arguments. */
 );
 \end{verbatim}
 Write code to implement the equivalent of this call on UNIX. You should show how you use
@@ -402,10 +402,42 @@ an interrupt periodically (e.g., every 10ms). On each interrupt, the trap is gen
 and the {\em handler} executes (by transferring control through IDT). What should the
 handler do to implement preemptive scheduling (i.e., a process can be interrupted
 at any time)?
-\item Interrupt vs. Process model
+\item The instruction to load the Interrupt Descriptor Table
+Register (IDTR) is {\tt lidt} and is a privileged instruction, i.e., it can
+only be executed in privileged mode. Assume that it was possible
+to execute this instruction in user mode by an untrusted
+user process. Show an attack using this additional (hypothetical)
+capability, whereby:
+\begin{enumerate}
+\item A user process can crash the machine.
+\item A user process can read the memory contents of another
+process.
+\end{enumerate}
+You should show the steps that the user process should follow
+to launch this attack in as much detail as possible.
+\item How often does the value of {\tt ss0} and {\tt esp0} change in the
+task-state segment (TSS) in the
+\begin{enumerate}
+\item Interrupt-model kernel. i.e., one kernel stack per CPU
+\item Process-model kernel. i.e., one kernel stack per process
+\end{enumerate}
+Assume a uniprocessor system.
 \end{enumerate}
 
 \section{Paging}
+\begin{enumerate}
+\item How much virtual address space is named by one entry in the page-table (PTE)? How
+much virtual address space is named by one entry in the page-directory (PDE)?
+\item What is the smallest page table structure required on 32-bit
+x86, to implement the following
+address space. By smallest, we mean that you should use the minimum amount
+of space for the page table structure. (specify an address space that would require
+a combination of large and small pages to implement it in minimum space).
+\item Give examples where the same page in physical address space is pointed-to in
+multiple page-table entries or page-directory entries. The aliasing
+page-table or page-directory entries may be
+present in the same page table structure, or different page table structures.
+\end{enumerate}
 
 \section{Process Switching, Fork, Scheduler}
 \section{Creating the First Process}
