@@ -422,6 +422,51 @@ task-state segment (TSS) in the
 \item Process-model kernel. i.e., one kernel stack per process
 \end{enumerate}
 Assume a uniprocessor system.
+\item Assume that a CPU is receiving external
+interrupts with uniform distribution at an average
+frequency of 100Hz. Assume that the kernel is using the process model (one kernel
+stack per process). Also assume that the kernel is non-preemptible, i.e., if a process
+is executing in kernel mode, it cannot be context-switched out until it returns back to
+user mode. During execution in kernel mode, the process uses its kernel stack to store
+its state. The kernel is using a 4KB stack.\\\\
+However, the kernel developer has forgotten to ensure that all external device interrupt
+handlers should execute with interrupts disabled. i.e., none of the IDT entries specify
+that interrupts should be disabled before transferring control to the handler.\\\\
+Answer the following questions:
+\begin{enumerate}
+\item If an external interrupt handler executes for roughly 10 microseconds, and does
+not disable interrupts during its execution, what is the probability that the kernel
+stack would overflow? Assume that one execution
+of an external interrupt handler pushes around 512 bytes to the stack in ramp-up/tear-down
+fashion (i.e., the kstack first grows by 512 bytes uniformly and then shrinks by 512
+bytes uniformly distributed over the execution time of the interrupt handler).
+\item Somebody informs the kernel developer that this is a bug in his kernel; and so he
+fixes the bug by ensuring that the first instruction in all external interrupt handlers
+is {\tt cli} and the last instruction in the interrupt handler
+restores the original value of the interrupt flag (before calling {\tt iret}). Does this
+ensure correct execution in all cases? If not, what is the new probability that the
+kernel stack would overflow?
+\end{enumerate}
+
+\item Because threads can access shared state concurrently, a bad thread interleaving could
+potentially result in incorrect program behavior (if the program is not written carefully). Such a
+situation is called a race condition. Assume that you are developing a new OS, let’s call this YOS (your-own OS). Assume that YOS runs only on uniprocessor machines.
+\begin{enumerate}
+\item Is it possible for a multi-threaded application to have a race-condition when running on
+YOS (on a uniprocessor system)? Why/why not? Clearly state the assumptions you are
+making regarding your OS design to justify your answer.
+\item One way of disallowing race conditions is to use “locks”. Your friend
+suggests that a
+simple way of implementing locks in YOS is to implement two system calls called
+“{\tt disable\_interrupts()}” and “{\tt enable\_interrupts()}”. He suggests
+that because YOS runs
+only on uniprocessor systems, an application programmer can use these system calls to
+ensure atomicity of its critical sections. If you agree with him, implement functions
+“{\tt lock(L)}” and “{\tt unlock(L)}” using the system calls
+“{\tt disable\_interrupts()}” and “{\tt enable\_interrupts()}”. 
+\item Is it a good/bad idea to provide such system calls (enable/disable interrupts) to the
+application developer? Why/why not?
+\end{enumerate}
 \end{enumerate}
 
 \section{Paging}
@@ -431,12 +476,36 @@ much virtual address space is named by one entry in the page-directory (PDE)?
 \item What is the smallest page table structure required on 32-bit
 x86, to implement the following
 address space. By smallest, we mean that you should use the minimum amount
-of space for the page table structure. (specify an address space that would require
+of space for the page table structure. (XXX: TODO: specify an address space that would
+require
 a combination of large and small pages to implement it in minimum space).
 \item Give examples where the same page in physical address space is pointed-to in
 multiple page-table entries or page-directory entries. The aliasing
 page-table or page-directory entries may be
 present in the same page table structure, or different page table structures.
+\item The space overhead of a page table can be computed as:
+$$
+\frac{VAbytes}{PTsize}
+$$
+Here, $VAbytes$ are the total number of bytes in the virtual address space that
+are (validly) named by the page table. For example, if the process uses 3123 bytes of
+stack and 432 bytes of code, then the value of $VAbytes$ for that process
+is $3123+432=3555$. The $PTsize$ is the total number of bytes required for representing
+the page table --- this includes number of bytes required to represent the page directory
+and the page table pages (including invalid/not-present entries). For example,
+two pages are required to represent an address space with valid
+bytes ranging from 0-100 (one for the page directory and one for the second-level
+page table). Thus the $PTsize$ in this case would be $2 * 4096 = 8192$ bytes.\\\\
+Draw a page table and its corresponding VA space which:
+\begin{enumerate}
+\item has the maximum page-table space overhead (as computed by the fraction $\frac{VAbytes}{PTsize}$). What is the space overhead in this case?
+\item has the minimum page-table space overhead (as computed by the fraction $\frac{VAbytes}{PTsize}$). What is the space overhead in this case?
+\end{enumerate}
+\item Assume a memory access latency of 100ns. What should be the TLB hit rate to ensure
+that the average memory access latency is 102ns. Assume there are no instruction/data
+caches in the hardware.
+\item XXX: TODO: include a question that estimates the size of a TLB to achieve the
+desired hit rate.
 \end{enumerate}
 
 \section{Process Switching, Fork, Scheduler}
