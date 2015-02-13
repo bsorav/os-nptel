@@ -440,7 +440,8 @@ stack would overflow? Assume that one execution
 of an external interrupt handler pushes around 512 bytes to the stack in ramp-up/tear-down
 fashion (i.e., the kstack first grows by 512 bytes uniformly and then shrinks by 512
 bytes uniformly distributed over the execution time of the interrupt handler).
-\item Somebody informs the kernel developer that this is a bug in his kernel; and so he
+\item A friend informs the kernel developer that this is a bug in
+his kernel; and so he
 fixes the bug by ensuring that the first instruction in all external interrupt handlers
 is {\tt cli} and the last instruction in the interrupt handler
 restores the original value of the interrupt flag (before calling {\tt iret}). Does this
@@ -501,7 +502,8 @@ Draw a page table and its corresponding VA space which:
 \item has the maximum page-table space overhead (as computed by the fraction $\frac{VAbytes}{PTsize}$). What is the space overhead in this case?
 \item has the minimum page-table space overhead (as computed by the fraction $\frac{VAbytes}{PTsize}$). What is the space overhead in this case?
 \end{enumerate}
-\item Assume a memory access latency of 100ns. What should be the TLB hit rate to ensure
+\item Assume a memory access latency of 100ns, and a two-level page table
+hierarchy on 32-bit x86. What should be the TLB hit rate to ensure
 that the average memory access latency is 102ns. Assume there are no instruction/data
 caches in the hardware.
 \item XXX: TODO: include a question that estimates the size of a TLB to achieve the
