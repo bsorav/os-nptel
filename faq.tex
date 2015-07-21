@@ -169,6 +169,19 @@ Write code to implement the equivalent of this call on UNIX. You should show how
 on
 UNIX.
 
+\item Write the pseudo-code for a program ``{\tt cp}'' that takes two command-line arguments, say input-file and output-file, copies the input-file to the output-file.
+\begin{verbatim}
+Syntax:
+$ cp ifile ofile
+
+Program:
+
+int main(int argc, char **argv)
+{
+  //your solution goes here.
+  //Use UNIX system calls to implement the logic.
+}
+\end{verbatim}
 
 \end{enumerate}
 
@@ -296,9 +309,28 @@ _g:
 \end{itemize}
 What would be the smallest possible (but correct) implementation of {\tt \_f}?
 
+\item Consider the following function:
+\begin{verbatim}
+int32_t global;
+int32_t foo(int32_t a, int32_t *b) {
+  int32_t c;
+  c = global + a;
+  return *(b + c);
+}
+\end{verbatim}
+Assume that the variable global is allocated at a global address 0x12345. Write
+the assembly code for this function, with proper comments on which assembly code
+lines are implementing which C statement. Assume GCC calling conventions. You will
+need to be careful about properly naming all variables and
+arguments (e.g., using global addresses, stack offsets or frame pointer offsets),
+use proper opcodes and addressing modes, obey caller and callee­save conventions, etc. It is
+okay to not be exactly correct in the use of x86 opcodes, but the general layout of the code
+and its logic should be correct.
+
 \end{enumerate}
 
 \section{Segmentation and Trap Handling}
+\label{sec:segmentation}
 \begin{enumerate}
 \item
 Consider the following program header of an ELF executable file {\tt a.out}:
@@ -335,11 +367,105 @@ application's address space in the following situations:
 \item The application tries to overwrite GDT entries
 \item The application tries to lower its privilege-level (i.e., tries to gain supervisor privileges).
 \end{enumerate}
+\item The instruction to load the Interrupt Descriptor Table Register (IDTR)
+is ``{\tt lidt}'' and is a
+privileged instruction, i.e., it can only be executed in privileged mode. Assume that it was
+possible to execute this instruction in user mode by an untrusted user process. Show an
+attack using this additional (hypothetical) capability, whereby:
+\begin{itemize}
+\item A user process can crash the machine.
+\item A user process can read the memory contents of another process.
+\end{itemize}
+You should show the steps that the user process should follow to launch this attack in as
+much detail as possible
 \end{enumerate}
 \section{Paging}
+\begin{enumerate}
+\item  Assume a memory access latency of 100ns, and a 2­level page table hierarchy on 32­bit
+x86. What should be the TLB hit rate to ensure that the average memory access latency is
+102ns. Assume there are no instruction/data caches in the hardware.
+
+\item
+Consider the following program header of an ELF executable file {\tt a.out}:
+\begin{verbatim}
+LOAD: offset    0x00001000
+      vaddr 0x40100000
+      paddr 0x00100000
+      align 2**12
+      filesize 0x0000b596
+      memsize 0x000126fc
+      flags rwx
+\end{verbatim}
+Assume that this executable is loaded using the {\tt exec(“a.out”, …)} system call on 32-bit Linux.
+Also, assume that the Linux kernel is mapped starting at virtual address {\tt 0xc0000000}.
+\begin{enumerate}
+\item[a.] (repeat from Chapter~\ref{sec:segmentation}) Draw the layout of
+the virtual address space of the process just after successful completion of
+the exec() system call. Indicate the sizes, and the contents of the memory regions, wherever possible.
+\item[b.] Assume that the operating system is using paging to map the pages of the executable on
+x86 using a two­level page table. Also assume that it is not using large pages ­­­ i.e., it is only
+using 4KB pages to map the process and kernel’s address space. Assume that the size of the
+physical memory is 4MB and it is entirely mapped in the kernel address space (starting at
+0xc0000000). Also, assume that the kernel’s code and data takes 1MB of physical memory
+space (start at physical address 0x100000). Draw the page table and indicate the values stored
+in them. Especially, say which entries will be present and where they will be mapped (what are
+the likely values of these entries). Assume all space is mapped with rwx privileges (but of
+course, differing in user/kernel privileges).
+\end{enumerate}
+\end{enumerate}
 \section{Kernel Structures for Implementing Processes}
+\begin{enumerate}
+\item List a few in-memory data structures used by the kernel
+to store information about processes. Which of these data structures are
+visible to the process? How does the kernel ensure that all these structures
+are protected from the untrusted process? What would be the typical space-overheads
+of these data structures (you do not need to be exact, but some rough
+estimates are good enough)? Compare these to typical process sizes (again, use
+some representative programs that you use daily, and roughly estimate their
+size).
+
+\item {\tt malloc} and {\tt free} are functions available both for the kernel
+and for the user programs. What is the difference between kernel's functions
+and user program's functions? Can they have identical implementations --- what
+are some necessary differences?
+
+\item Explain the problem of fragmentation, in the context of malloc() and
+free(). Compare and contrast this with the problem of fragmentation, as
+it exists with segmentation-based virtual memory.
+\end{enumerate}
 \section{Process Switching, Fork, Scheduler}
+\begin{enumerate}
+\item Explain the steps involved in
+\begin{itemize}
+\item A context-switch that occurs because a process voluntarily calls {\tt yield()}.
+\item A context-switch that occurs due to a pre-emptive context switch
+triggered by a hardware timer interrupt.
+\item A context-switch that occurs because a process tries to read from
+the disk (slow device), which causes it to wait (and thus relinquish the CPU).
+\end{itemize}
+For each step, also indicate the approximate time it takes to execute that
+step. For example, a trap takes a few micro-seconds (including saving and restoring
+trapframes), saving and restoring registers, reloading page table, etc. Also,
+briefly discuss the indirect cost of context-switch, e.g., TLB flush.
+
+\item Estimate the cost of forking a new process. Compare the cost of fork,
+with and without the copy-on-write optimization.
+
+\item How does a doubly linked-list help in implementing a round-robin
+scheduler? Why is a linked-list preferred over more complex data structures
+like min-heap or binary-search trees, to implement process lists in the kernel?
+
+\item Explain how context-switch can be implemented simply by switching
+stacks. Do we need to save all registers, or only callee-saved registers on
+a context-switch? Why?
+\end{enumerate}
 \section{Creating the First Process}
+\begin{enumerate}
+\item What is the typical functionality of the first process? What is its
+purpose?
+\item How is the first process initialized? Explain, using an example
+program that can be used as a first process, while using UNIX abstractions.
+\end{enumerate}
 \section{Handling User Pointers}
 \section{Concurrency}
 \section{Locking}
