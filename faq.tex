@@ -160,7 +160,7 @@ Boolean CreateProcess(
     lpProcessInformation  /* A pointer to Process Information structure that
                              receives identification information about the
                              new process. */
-. . . /* ignoring some other arguments. */
+     . . .                /* ignoring some other arguments. */
 );
 \end{verbatim}
 Write code to implement the equivalent of this call on UNIX. You should show how you use
@@ -351,7 +351,8 @@ the virtual address space of the process just after successful completion of
 the exec() system call. Indicate the sizes, and the contents of the memory regions, wherever possible.
 \item[b.] Draw the layout of the physical memory of the computer just after this
 executable is loaded. Assume, segmentation is used for implementing virtual memory address
-spaces. Show the contents of the segment registers (CS, DS, SS, etc.), the global-descriptor table, and
+spaces. Show the contents of the segment registers (CS, DS, SS, etc.),
+the global-descriptor table (GDT), and
 GDTR.
 \end{enumerate}
 
@@ -412,6 +413,96 @@ in them. Especially, say which entries will be present and where they will be ma
 the likely values of these entries). Assume all space is mapped with rwx privileges (but of
 course, differing in user/kernel privileges).
 \end{enumerate}
+
+\item What are the different ways in which an unpriviliged application can cause the CPU
+to start running in privileged mode?
+\item On a trap, the hardware changes the contents of the ESP register if the trap causes
+an escalation in privilege. Why does it need to do so? Where is the new value of ESP obtained
+from?
+\item In a certain OS, when executing in kernel mode, a trap on vector
+$0x80$ causes three words to get
+pushed on stack by hardware, namely
+CS, EIP and EFLAGS. On the other hand, when executing in user mode, a trap on vector
+$0x80$ causes five
+words to get pushed on stack by hardware, namely CS, EIP, EFLAGS, SS, and ESP.
+What does it say about
+the contents of the Interrupt Descriptor Table (IDT) at $0x80$ entry? Why does the hardware
+push a different number of words in the two cases?
+\item Should an operating system allow an unprivileged (untrusted) application to modify
+the task-state segment (which is used to obtain the value of ESP on a trap)? Why or why not?
+\item A process-model kernel maintains a separate kernel-side stack (the stack to which
+control transfers on a privileged trap) for each process. On the other hand, an interrupt-model
+kernel maintains a single stack for the kernel. What are the advantages and disadvantages of
+each design?
+\item Consider the first question in Section~\ref{sec:segmentation}. Draw the layout of the
+physical memory of the computer just after a trap occurs during the execution of this
+executable. Show the contents of the segment registers (CS, DS, SS, etc.), the global-descriptor
+table (GDT) and GDTR.
+\item On a trap, certain parts of the processor state (CS, EIP, EFLAGS) are saved by the hardware.
+The other parts of the processor state (e.g., other segment registers, other general-purpose
+registers like EAX, etc.) are saved by software (i.e., the first few instructions executed
+after a trap). (Note that the first few instructions executed on a trap are a part of the
+trap handler). Why this distinction? Why can't all registers be saved by the software? Conversely,
+why does the hardware not save all elements of the state on a trap?
+\item The trap-handling mechanism is used to implement system calls. Explain the sequence
+of steps that a kernel must follow to ensure that a user can invoke any system call at will,
+but cannot otherwise subvert the security of the computer.
+\item Explain the sequence of steps executed by the hardware on the execution of the {\tt iret}
+instruction.
+\item {\em Advanced Question}:
+Traps can be caused due to exceptions (triggered by an application through a software
+instruction or a violation, e.g., segmentation fault) or by external interrupts (e.g.,
+caused by a device like network card, disk, etc.). In both cases, the trap handling mechanism
+remains same. What are the advantages of using the same mechanism of trap handling for
+both internal exceptions and external interrupts?
+\item {\em Advanced Question}: On debuggers like GDB, a programmer is allowed to set a
+``breakpoint'', which means that if the execution of the program ever reaches the breakpoint
+address, then the execution is interrupted. One way to implement breakpoints is to
+replace the instruction at the address of the breakpoint with a software interrupt
+instruction. Whenever the execution reaches the breakpoint, a trap gets generated
+and the kernel can transfer control to the debugger. How does the debugger know the
+contents of the program at the time of reaching the breakpoint? Explain the sequence of
+steps required to save the program state, so the programmer can examine it.
+
+\item How much virtual address space is named by one entry in the page-table (PTE)? How
+much virtual address space is named by one entry in the page-directory (PDE)?
+\item What is the smallest page table structure required on 32-bit
+x86, to implement the following
+address space. By smallest, we mean that you should use the minimum amount
+of space for the page table structure. %(XXX: TODO: specify an address space that would
+%require
+%a combination of large and small pages to implement it in minimum space).
+\item Give examples where the same page in physical address space is pointed-to in
+multiple page-table entries or page-directory entries. The aliasing
+page-table or page-directory entries may be
+present in the same page table structure, or different page table structures.
+\item The space overhead of a page table can be computed as:
+$$
+\frac{VAbytes}{PTsize}
+$$
+Here, $VAbytes$ are the total number of bytes in the virtual address space that
+are (validly) named by the page table. For example, if the process uses 3123 bytes of
+stack and 432 bytes of code, then the value of $VAbytes$ for that process
+is $3123+432=3555$. The $PTsize$ is the total number of bytes required for representing
+the page table --- this includes number of bytes required to represent the page directory
+and the page table pages (including invalid/not-present entries). For example,
+two pages are required to represent an address space with valid
+bytes ranging from 0-100 (one for the page directory and one for the second-level
+page table). Thus the $PTsize$ in this case would be $2 * 4096 = 8192$ bytes.\\\\
+Draw a page table and its corresponding VA space which:
+\begin{enumerate}
+\item has the maximum page-table space overhead (as computed by the fraction $\frac{VAbytes}{PTsize}$). What is the space overhead in this case?
+\item has the minimum page-table space overhead (as computed by the fraction $\frac{VAbytes}{PTsize}$). What is the space overhead in this case?
+\end{enumerate}
+\item Assume a memory access latency of 100ns, and a two-level page table
+hierarchy on 32-bit x86. What should be the TLB hit rate to ensure
+that the average memory access latency is 102ns. Assume there are no instruction/data
+caches in the hardware.
+%\item XXX: TODO: include a question that estimates the size of a TLB to achieve the
+%desired hit rate.
+
+
+
 \end{enumerate}
 \section{Kernel Structures for Implementing Processes}
 \begin{enumerate}
@@ -432,7 +523,87 @@ are some necessary differences?
 \item Explain the problem of fragmentation, in the context of malloc() and
 free(). Compare and contrast this with the problem of fragmentation, as
 it exists with segmentation-based virtual memory.
+
+\item Each process has a unique {\tt pid}. Assume that the {\tt pid} is a 32-bit integer.
+Does that mean that there can be only $2^{32}$ number of processes across the lifetime
+of execution of the computer? When can the {\tt pid}'s be recycled (i.e., reused for new
+processes).
+\item At any time, let $m$ be the number of PCBs whose state is RUNNING and $n$ be the
+number of CPUs in the computer. What is the relation between $m$ and $n$?
+\item An OS configures preemption by configuring the timer interrupt device to generate
+an interrupt periodically (e.g., every 10ms). On each interrupt, the trap is generated
+and the {\em handler} executes (by transferring control through IDT). What should the
+handler do to implement preemptive scheduling (i.e., a process can be interrupted
+at any time)?
+\item The instruction to load the Interrupt Descriptor Table
+Register (IDTR) is {\tt lidt} and is a privileged instruction, i.e., it can
+only be executed in privileged mode. Assume that it was possible
+to execute this instruction in user mode by an untrusted
+user process. Show an attack using this additional (hypothetical)
+capability, whereby:
+\begin{enumerate}
+\item A user process can crash the machine.
+\item A user process can read the memory contents of another
+process.
 \end{enumerate}
+You should show the steps that the user process should follow
+to launch this attack in as much detail as possible.
+\item How often does the value of {\tt ss0} and {\tt esp0} change in the
+task-state segment (TSS) in the
+\begin{enumerate}
+\item Interrupt-model kernel. i.e., one kernel stack per CPU
+\item Process-model kernel. i.e., one kernel stack per process
+\end{enumerate}
+Assume a uniprocessor system.
+\item Assume that a CPU is receiving external
+interrupts with uniform distribution at an average
+frequency of 100Hz. Assume that the kernel is using the process model (one kernel
+stack per process). Also assume that the kernel is non-preemptible, i.e., if a process
+is executing in kernel mode, it cannot be context-switched out until it returns back to
+user mode. During execution in kernel mode, the process uses its kernel stack to store
+its state. The kernel is using a 4KB stack.\\\\
+However, the kernel developer has forgotten to ensure that all external device interrupt
+handlers should execute with interrupts disabled. i.e., none of the IDT entries specify
+that interrupts should be disabled before transferring control to the handler.\\\\
+Answer the following questions:
+\begin{enumerate}
+\item If an external interrupt handler executes for roughly 10 microseconds, and does
+not disable interrupts during its execution, what is the probability that the kernel
+stack would overflow? Assume that one execution
+of an external interrupt handler pushes around 512 bytes to the stack in ramp-up/tear-down
+fashion (i.e., the kstack first grows by 512 bytes uniformly and then shrinks by 512
+bytes uniformly distributed over the execution time of the interrupt handler).
+\item A friend informs the kernel developer that this is a bug in
+his kernel; and so he
+fixes the bug by ensuring that the first instruction in all external interrupt handlers
+is {\tt cli} and the last instruction in the interrupt handler
+restores the original value of the interrupt flag (before calling {\tt iret}). Does this
+ensure correct execution in all cases? If not, what is the new probability that the
+kernel stack would overflow?
+\end{enumerate}
+
+\item Because threads can access shared state concurrently, a bad thread interleaving could
+potentially result in incorrect program behavior (if the program is not written carefully). Such a
+situation is called a race condition. Assume that you are developing a new OS, let’s call this YOS (your-own OS). Assume that YOS runs only on uniprocessor machines.
+\begin{enumerate}
+\item Is it possible for a multi-threaded application to have a race-condition when running on
+YOS (on a uniprocessor system)? Why/why not? Clearly state the assumptions you are
+making regarding your OS design to justify your answer.
+\item One way of disallowing race conditions is to use “locks”. Your friend
+suggests that a
+simple way of implementing locks in YOS is to implement two system calls called
+“{\tt disable\_interrupts()}” and “{\tt enable\_interrupts()}”. He suggests
+that because YOS runs
+only on uniprocessor systems, an application programmer can use these system calls to
+ensure atomicity of its critical sections. If you agree with him, implement functions
+“{\tt lock(L)}” and “{\tt unlock(L)}” using the system calls
+“{\tt disable\_interrupts()}” and “{\tt enable\_interrupts()}”. 
+\item Is it a good/bad idea to provide such system calls (enable/disable interrupts) to the
+application developer? Why/why not?
+\end{enumerate}
+\end{enumerate}
+
+
 \section{Process Switching, Fork, Scheduler}
 \begin{enumerate}
 \item Explain the steps involved in
